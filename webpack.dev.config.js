@@ -42,8 +42,10 @@ module.exports = {
             component: path.join(__dirname, 'src/component'),
             router: path.join(__dirname, 'src/router'),
             action: path.join(__dirname, 'src/redux/actions'),
-            reducers: path.join(__dirname, 'src/redux/reducers'),
-            redux: path.join(__dirname, 'src/redux')
+            reducers: path.join(__dirname, 'src/redux/reducers')
         }
-    }
+    },
+
+    // 分析错误
+    devtool: 'inline-source-map'
 };
