@@ -463,6 +463,31 @@ if (module.hot) {
 
 执行npm start
 
+# 文件路径优化
+原来引用
+```
+import Home from '../pages/Home/Home';
+```
+
+改成
+```
+import Home from 'pages/Home/Home';
+```
+
+webpack.dev.config.js
+```
+resolve: {
+    alias: {
+        pages: path.join(__dirname, 'src/pages'),
+        component: path.join(__dirname, 'src/component'),
+        router: path.join(__dirname, 'src/router')
+    }
+}
+```
+
+然后涉及到的路径都可以改掉了
+
+
 
 
 
