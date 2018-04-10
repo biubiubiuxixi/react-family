@@ -25,6 +25,7 @@ export default class Home extends Component {
                 {age}<br />
                 请仔细看哦state可以保存了哦
                 嘿嘿嘿
+                <img src="./../../images/bg.jpg" />
             </div>
         )
     }

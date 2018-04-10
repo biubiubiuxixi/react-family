@@ -1015,7 +1015,58 @@ module: {
 
 ### 3.随便在哪个页面加入样式进行测试
 
+# 图片编译
+### 1.安装
+```
+npm install url-loader file-loader
+```
 
+### 2.webpack.dev.config.js rules增加
+```
+{
+    test: /\.(png|jpg|gif)$/,
+    use: [{
+        loader: 'url-loader',
+        options: {
+            limit: 8192
+        }
+    }]
+}
+```
+options limit 8192意思是，小于等于8K的图片会被转成base64编码，直接插入HTML中，减少HTTP请求。
+
+### 3.测试
+src/pages/Page1/Page1.js
+```
+import React, {Component} from 'react';
+
+import './Page1.css';
+
+import image from './images/brickpsert.jpg';
+
+export default class Page1 extends Component {
+    render() {
+        return (
+            <div className="page-box">
+                this is page1~
+                <img src={image}/>
+            </div>
+        )
+    }
+}
+```
+
+我试了一下直接src=url不可以，查了资料大概是这样解释的：
+```
+import Banner from './imgs/Home_banner.png';
+<img src={Banner} />
+
+<img src="***.jpg" />
+```
+
+第一种引入方式，webpack把当前图片当做资源文件打包，你可以在配置文件里面设置图片加载器，小与多少kb已base64码的格式打包，当大于某个kb大小的时候，webpack会把当前图片也变编译到你的你的打包目录下面。
+
+第二种引入方式，你在css文件里面可以引用，因为css-loader会把资源文件一起打包，而在js中这样引入，webpack只会当前的src当做字符串，并不会当做资源文件去处理，这样当你的代码一旦打包到线上就会出现图片文件路径找不到的问题
 
 
 
