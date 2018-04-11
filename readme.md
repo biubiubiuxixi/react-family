@@ -1173,6 +1173,131 @@ const getRouter = () => (
 export default getRouter;
 ```
 
+### 4.查看加载的是哪个js文件
+webpack.dev.config.js,加个chunkFilename
+```
+output: {
+    path: path.join(__dirname, './dist'),
+    filename: 'bundle.js',
+    chunkFilename: '[name].js'
+}
+```
+
+# 缓存
+### 1.修改webpack配置
+webpack.dev.config.js
+```
+output: {
+    path: path.join(__dirname, './dist'),
+    filename: '[name].[hash].js',
+    chunkFilename: '[name].[chunkhash].js'
+}
+```
+
+### 2.HtmlWebpackPlugin插件
+```
+npm install html-webpack-plugin
+```
+
+src/index.html
+```
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Document</title>
+</head>
+<body>
+<div id="app"></div>
+</body>
+</html>
+```
+
+修改webpack.dev.config.js，增加plugin
+```
+var HtmlWebpackPlugin = require('html-webpack-plugin');
+
+    plugins: [new HtmlWebpackPlugin({
+        filename: 'index.html',
+        template: path.join(__dirname, 'src/index.html')
+    })],
+```
+
+# 生产环境构建
+开发环境(development)和生产环境(production)的构建目标差异很大。在开发环境中，我们需要具有强大的、具有实时重新加载(live reloading)或热模块替换(hot module replacement)能力的 source map 和 localhost server。而在生产环境中，我们的目标则转向于关注更小的 bundle，更轻量的 source map，以及更优化的资源，以改善加载时间。由于要遵循逻辑分离，我们通常建议为每个环境编写彼此独立的 webpack 配置。
+
+创建一个webpack.config.js文件,并在webpack.dev.config.js的基础上先做以下几个修改：
+- 先删除webpack-dev-server相关的东西~
+- devtool的值改成cheap-module-source-map
+- 刚才说的hash改成chunkhash
+
+webpack.config.js
+```
+const path = require('path');
+var HtmlWebpackPlugin = require('html-webpack-plugin');
+var webpack = require('webpack');
+
+module.exports = {
+    devtool: 'cheap-module-source-map',
+    entry: {
+        app: [
+            path.join(__dirname, 'src/index.js')
+        ],
+        vendor: ['react', 'react-router-dom', 'redux', 'react-dom', 'react-redux']
+    },
+    output: {
+        path: path.join(__dirname, './dist'),
+        filename: '[name].[chunkhash].js',
+        chunkFilename: '[name].[chunkhash].js'
+    },
+    module: {
+        rules: [{
+            test: /\.js$/,
+            use: ['babel-loader'],
+            include: path.join(__dirname, 'src')
+        }, {
+            test: /\.css$/,
+            use: ['style-loader', 'css-loader']
+        }, {
+            test: /\.(png|jpg|gif)$/,
+            use: [{
+                loader: 'url-loader',
+                options: {
+                    limit: 8192
+                }
+            }]
+        }]
+    },
+    plugins: [
+        new HtmlWebpackPlugin({
+            filename: 'index.html',
+            template: path.join(__dirname, 'src/index.html')
+        }),
+        new webpack.optimize.CommonsChunkPlugin({
+            name: 'vendor'
+        })
+    ],
+
+    resolve: {
+        alias: {
+            pages: path.join(__dirname, 'src/pages'),
+            component: path.join(__dirname, 'src/component'),
+            router: path.join(__dirname, 'src/router'),
+            actions: path.join(__dirname, 'src/redux/actions'),
+            reducers: path.join(__dirname, 'src/redux/reducers')
+        }
+    }
+};
+```
+
+在package.json增加打包脚本
+```
+"build":"webpack --config webpack.config.js"
+```
+
+执行npm run build
+在dist文件夹下生成要发布的所有文件
+
 
 
 
