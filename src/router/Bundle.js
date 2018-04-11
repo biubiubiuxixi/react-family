@@ -1,4 +1,4 @@
-import React, {Component} from 'react';
+import React, {Component} from 'react'
 
 class Bundle extends Component {
     state = {
@@ -33,4 +33,4 @@ class Bundle extends Component {
     }
 }
 
-export default Bundle;
+export default Bundle

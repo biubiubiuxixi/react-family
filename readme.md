@@ -1298,14 +1298,208 @@ module.exports = {
 执行npm run build
 在dist文件夹下生成要发布的所有文件
 
+# 文件压缩
+webpack使用UglifyJSPlugin来压缩生成的文件。
+```
+npm i --save-dev uglifyjs-webpack-plugin
+```
 
+webpack.config.js
+```
+const UglifyJSPlugin = require('uglifyjs-webpack-plugin')
 
+module.exports = {
+  plugins: [
+    new UglifyJSPlugin()
+  ]
+}
+```
 
+npm run build发现打包文件大小减小了好多。
 
+# 优化缓存
+刚才我们把[name].[hash].js变成[name].[chunkhash].js后，npm run build后，
+发现app.xxx.js和vendor.xxx.js不一样了哦。
 
+但是现在又有一个问题了。
 
+你随便修改代码一处，例如Home.js，随便改变个字，你发现home.xxx.js名字变化的同时，
+vendor.xxx.js名字也变了。这不行啊。这和没拆分不是一样一样了吗？我们本意是vendor.xxx.js
+名字永久不变，一直缓存在用户本地的。~
 
+```
+plugins: [
+    new webpack.HashedModuleIdsPlugin()
+]
+```
 
+```
+new webpack.optimize.CommonsChunkPlugin({
+    name: 'runtime'
+})
+```
+
+# public path
+让静态文件的链接定位到静态服务器
+```
+output: {
+    publicPath : '/'
+}
+```
+
+# 打包优化
+自动清理dist文件
+```
+npm install clean-webpack-plugin --save-dev
+```
+
+webpack.config.js
+```
+const CleanWebpackPlugin = require('clean-webpack-plugin');
+
+plugins: [
+    new CleanWebpackPlugin(['dist'])
+]
+```
+
+# 抽取css
+单独生成css文件
+
+```
+npm install --save-dev extract-text-webpack-plugin
+```
+
+webpack.config.js
+```
+const ExtractTextPlugin = require("extract-text-webpack-plugin");
+
+module.exports = {
+  module: {
+    rules: [
+      {
+        test: /\.css$/,
+        use: ExtractTextPlugin.extract({
+          fallback: "style-loader",
+          use: "css-loader"
+        })
+      }
+    ]
+  },
+  plugins: [
+     new ExtractTextPlugin({
+         filename: '[name].[contenthash:5].css',
+         allChunks: true
+     })
+  ]
+}
+```
+
+# 使用axios和middleware优化API请求
+```
+npm install --save axios
+```
+
+src/redux/middleware/promiseMiddleware.js
+```
+import axios from 'axios';
+
+export default  store => next => action => {
+    const {dispatch, getState} = store;
+    /*如果dispatch来的是一个function，此处不做处理，直接进入下一级*/
+    if (typeof action === 'function') {
+        action(dispatch, getState);
+        return;
+    }
+    /*解析action*/
+    const {
+        promise,
+        types,
+        afterSuccess,
+        ...rest
+    } = action;
+
+    /*没有promise，证明不是想要发送ajax请求的，就直接进入下一步啦！*/
+    if (!action.promise) {
+        return next(action);
+    }
+
+    /*解析types*/
+    const [REQUEST,
+        SUCCESS,
+        FAILURE] = types;
+
+    /*开始请求的时候，发一个action*/
+    next({
+        ...rest,
+        type: REQUEST
+    });
+    /*定义请求成功时的方法*/
+    const onFulfilled = result => {
+        next({
+            ...rest,
+            result,
+            type: SUCCESS
+        });
+        if (afterSuccess) {
+            afterSuccess(dispatch, getState, result);
+        }
+    };
+    /*定义请求失败时的方法*/
+    const onRejected = error => {
+        next({
+            ...rest,
+            error,
+            type: FAILURE
+        });
+    };
+
+    return promise(axios).then(onFulfilled, onRejected).catch(error => {
+        console.error('MIDDLEWARE ERROR:', error);
+        onRejected(error)
+    })
+}
+```
+
+修改src/redux/store.js来应用这个中间件
+```
+import {createStore, applyMiddleware} from 'redux';
+import combineReducers from './reducers.js';
+
+import promiseMiddleware from './middleware/promiseMiddleware'
+
+let store = createStore(combineReducers, applyMiddleware(promiseMiddleware));
+
+export default store;
+```
+
+修改src/redux/actions/userInfo.js
+```
+export const GET_USER_INFO_REQUEST = "userInfo/GET_USER_INFO_REQUEST";
+export const GET_USER_INFO_SUCCESS = "userInfo/GET_USER_INFO_SUCCESS";
+export const GET_USER_INFO_FAIL = "userInfo/GET_USER_INFO_FAIL";
+
+export function getUserInfo() {
+    return {
+        types: [GET_USER_INFO_REQUEST, GET_USER_INFO_SUCCESS, GET_USER_INFO_FAIL],
+        promise: client => client.get(`http://localhost:8080/api/user.json`)
+    }
+}
+```
+
+修改src/redux/reducers/userInfo.js
+```
+ case GET_USER_INFO_SUCCESS:
+    return {
+        ...state,
+        isLoading: false,
+        userInfo: action.result.data,
+        errorMsg: ''
+    };
+```
+
+action.userInfo修改成了action.result.data。你看中间件，请求成功，会给action增加一个result字段来存储响应结果哦~不用手动传了。
+
+npm start看看我们的网络请求是不是正常。
 
 
 
