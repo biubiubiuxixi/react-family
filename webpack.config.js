@@ -14,7 +14,7 @@ const publicConfig = {
             test: /\.css$/,
             use: ExtractTextPlugin.extract({
                 fallback: "style-loader",
-                use: "css-loader"
+                use: ["css-loader", "postcss-loader"]
             })
         }]
     },
@@ -29,7 +29,7 @@ const publicConfig = {
         new ExtractTextPlugin({
             filename: '[name].[contenthash:5].css',
             allChunks: true
-        })
+        }),
     ]
 
 };
